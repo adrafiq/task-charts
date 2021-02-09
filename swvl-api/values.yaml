@@ -1,0 +1,61 @@
+serviceGroup: swvl  # Grouping a set of services
+serviceName: "example-api" # Only For example, should throw in production
+critical: false
+port: 3000
+image:
+  repository: example-api-service # Refrencing Local Docker
+  pullPolicy: IfNotPresent
+  tag: "latest"
+  
+podAnnotations: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Config values for configMap. Mounted as enviornment to app container
+configuration:
+  NODE_ENV: production
+  SECRET: secret
+  MONGODB_URI: swvl-db-headless.swvl
+# Ingress rule created for service.
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: localhost
+      paths:
+      - backend:
+          servicename: swvl-api-example # Bad defaults, only for example. Should throw in production
+          servicePort: 80
+      - path: /api/v1/swvl-api-example
+# Pod horizontal scaling policy
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 100
+
+# Resource limit for service container inside pod
+resources:
+  limits:
+    cpu: 50m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+# Stateful single replica instance of mongodb
+mongodb:
+  fullnameOverride: swvl-db
+  architecture: standalone
+  auth:
+    enabled: false
+  service:
+    type: ClusterIP
+    nameOverride: swvl-db-headless
+  persistence: 
+    enabled: true
+    size: 1Gi 

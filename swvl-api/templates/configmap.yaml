@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.serviceGroup }}
+  labels:
+    {{- include "swvl-api.labels" . | nindent 4 }}
+data:
+  configuration.txt: |-
+    {{ .Values.configuration }}

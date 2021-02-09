@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: {{ .Values.serviceGroup }}
+  labels:
+    {{- include "swvl-api.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      service: {{ .Values.serviceName }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "swvl-api.selectorLabels" . | nindent 8 }}
+        service: {{ .Values.serviceName }}
+        critical: '{{ .Values.critical }}'
+    spec:
+      containers:
+        - name: {{ .Values.serviceName }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.configuration }}
+          env:  # ToDO: In Production, container should read mounted configmap file for dynamic values. 
+            - name: NODE_ENV
+              value: {{ .NODE_ENV }}
+            - name: SECRET
+              value: {{ .SECRET }}
+            - name: MONGODB_URI
+              value: {{ .MONGODB_URI }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+              protocol: TCP
+          # Example app lacked health and readiness probe.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
